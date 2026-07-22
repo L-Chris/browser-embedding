@@ -1,0 +1,63 @@
+schema_version: 1
+seed: 42
+
+model:
+  vocab_size: 512
+  max_sequence_length: 24
+  embedding_dim: 32
+  hidden_dim: 64
+  num_heads: 4
+  num_repeats: 2
+  ffn_dim: 128
+  output_dim: 64
+  matryoshka_dims: [16, 32, 64]
+  dropout: 0.0
+  padding_idx: 0
+
+deployment:
+  embedding_format: int4
+  max_model_bytes: 1000000
+  max_bundle_bytes: 5000000
+  max_working_memory_bytes: 8000000
+  wasm_binary_budget_bytes: 3200000
+  tokenizer_asset_budget_bytes: 1000000
+  tokenizer_working_memory_bytes: 3000000
+  enforce_budget: true
+
+data:
+  kind: synthetic
+  train_pairs: 16
+  validation_pairs: 8
+  variants: [en_en, zh_zh, zh_en, en_zh, mixed_en, mixed_zh]
+
+objective:
+  pointwise_weight: 1.0
+  relational_weight: 0.1
+  retrieval_weight: 0.2
+  temperature: 0.05
+
+quantization:
+  enabled: true
+  warmup_epochs: 0
+
+training:
+  epochs: 1
+  batch_size: 4
+  eval_batch_size: 8
+  learning_rate: 0.0005
+  weight_decay: 0.01
+  warmup_ratio: 0.0
+  gradient_clip: 1.0
+  num_workers: 0
+  save_every: 1
+  log_every: 1
+  device: cpu
+
+evaluation:
+  multilingual_seed_enabled: false
+  best_metric: validation.ndcg_at_10
+
+run:
+  name: smoke
+  output_dir: artifacts/runs/smoke
+  export_on_finish: true

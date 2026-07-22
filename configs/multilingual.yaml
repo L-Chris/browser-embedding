@@ -1,0 +1,64 @@
+schema_version: 1
+seed: 42
+
+model:
+  vocab_size: 32000
+  max_sequence_length: 128
+  embedding_dim: 96
+  hidden_dim: 192
+  num_heads: 3
+  num_repeats: 3
+  ffn_dim: 384
+  output_dim: 384
+  matryoshka_dims: [64, 128, 256, 384]
+  dropout: 0.1
+  padding_idx: 0
+
+deployment:
+  embedding_format: int4
+  max_model_bytes: 3000000
+  max_bundle_bytes: 7000000
+  max_working_memory_bytes: 32000000
+  wasm_binary_budget_bytes: 3200000
+  tokenizer_asset_budget_bytes: 1000000
+  tokenizer_working_memory_bytes: 3000000
+  enforce_budget: true
+
+data:
+  kind: memmap
+  cache_dir: data/cache/multilingual-200k
+  teacher_key: multilingual-e5-small
+  tokenizer_path: assets/tokenizer.json
+
+objective:
+  pointwise_weight: 1.0
+  relational_weight: 0.1
+  retrieval_weight: 0.2
+  temperature: 0.05
+
+quantization:
+  enabled: true
+  warmup_epochs: 1
+
+training:
+  epochs: 10
+  batch_size: 128
+  eval_batch_size: 256
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  gradient_clip: 1.0
+  num_workers: 4
+  save_every: 1
+  log_every: 100
+  device: auto
+
+evaluation:
+  multilingual_seed_enabled: true
+  seed_path: eval/multilingual.jsonl
+  best_metric: multilingual.macro_ndcg_at_10
+
+run:
+  name: multilingual-ternary-v1
+  output_dir: artifacts/runs/multilingual-ternary-v1
+  export_on_finish: true

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling>=1.31,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "browser-embedding"
+version = "0.1.0"
+description = "Browser-first multilingual embedding model training and export"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+  "numpy>=2.4,<3",
+  "pydantic>=2.13,<3",
+  "PyYAML>=6.0.3,<7",
+  "torch>=2.13,<2.14",
+  "typer>=0.27,<1",
+]
+
+[project.optional-dependencies]
+data = [
+  "datasets>=5,<6",
+  "safetensors>=0.8,<1",
+  "sentence-transformers>=5.6,<6",
+  "transformers>=5.14,<6",
+]
+dev = [
+  "mypy>=2.3,<3",
+  "pytest>=9.1,<10",
+  "ruff>=0.15,<1",
+  "types-PyYAML>=6.0.12.20260518,<7",
+]
+
+[project.scripts]
+browser-embedding = "browser_embedding.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/browser_embedding"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["browser_embedding"]

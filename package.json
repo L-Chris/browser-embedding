@@ -1,0 +1,11 @@
+{
+  "name": "browser-embedding-workspace",
+  "private": true,
+  "packageManager": "pnpm@11.15.1",
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "build": "pnpm build:wasm && pnpm --filter browser-embedding build",
+    "check": "pnpm --filter browser-embedding check",
+    "test": "pnpm --filter browser-embedding test"
+  }
+}
