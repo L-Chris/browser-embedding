@@ -12,7 +12,13 @@ import browser_embedding.preparation.teacher as teacher_module
 from browser_embedding.config import load_experiment
 from browser_embedding.data import MemmapPairDataset
 from browser_embedding.preparation.cache import build_cache, validate_cache
-from browser_embedding.preparation.contracts import CacheRecipe, TeacherRecipe
+from browser_embedding.preparation.contracts import (
+    CacheRecipe,
+    LegacyTernlightRecipe,
+    TeacherRecipe,
+)
+from browser_embedding.preparation.io import sha256_file
+from browser_embedding.preparation.legacy_ternlight import import_legacy_ternlight_cache
 from browser_embedding.preparation.teacher import encode_teacher
 
 tokenizers = pytest.importorskip("tokenizers")
@@ -128,6 +134,113 @@ def test_candidate_tokenizer_matches_manifest() -> None:
         token: tokenizer.token_to_id(token)
         for token in ("[PAD]", "[UNK]", "[CLS]", "[SEP]", "[QRY]", "[DOC]")
     } == {"[PAD]": 0, "[UNK]": 1, "[CLS]": 2, "[SEP]": 3, "[QRY]": 4, "[DOC]": 5}
+
+
+def test_import_legacy_ternlight_cache(tmp_path: Path) -> None:
+    from tokenizers import Tokenizer
+
+    source = tmp_path / "legacy"
+    shared = source / "shared"
+    teacher_dir = source / "minilm"
+    shared.mkdir(parents=True)
+    teacher_dir.mkdir()
+    rows = [
+        ("a", "train", "en_en", "reset password", "reset your account password"),
+        ("b", "validation", "zh_zh", "如何退款", "可以在订单页面申请退款"),
+        ("c", "test", "mixed_en", "API 请求失败", "Retry the failed API request"),
+    ]
+    with (shared / "selection.jsonl").open("w", encoding="utf-8") as handle:
+        for identifier, split, variant, query, document in rows:
+            handle.write(
+                json.dumps(
+                    {
+                        "id": identifier,
+                        "group_id": identifier,
+                        "query": query,
+                        "positive": document,
+                        "variant": variant,
+                        "source": "fixture",
+                        "split": split,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+
+    tokenizer_path = Path("assets/tokenizer.json").resolve()
+    tokenizer = Tokenizer.from_file(str(tokenizer_path))
+    tokenizer.enable_truncation(max_length=128)
+    tokenizer.enable_padding(length=128, pad_id=0, pad_token="[PAD]")
+    values = [f"[QRY] {row[3]}" for row in rows] + [f"[DOC] {row[4]}" for row in rows]
+    encoded = tokenizer.encode_batch(values, add_special_tokens=True)
+    input_ids = np.zeros((len(rows), 2, 128), dtype=np.uint32)
+    attention_mask = np.zeros_like(input_ids, dtype=np.uint8)
+    for index, encoding in enumerate(encoded):
+        role = 0 if index < len(rows) else 1
+        row = index if role == 0 else index - len(rows)
+        input_ids[row, role] = encoding.ids
+        attention_mask[row, role] = encoding.attention_mask
+    np.save(shared / "input_ids.npy", input_ids)
+    np.save(shared / "attention_mask.npy", attention_mask)
+    np.save(shared / "split_codes.npy", np.asarray([0, 1, 2], dtype=np.uint8))
+    (shared / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "samples": len(rows),
+                "max_length": 128,
+                "vocab_size": 32_000,
+                "selection_sha256": "legacy-selection",
+                "seed": 42,
+            }
+        ),
+        encoding="utf-8",
+    )
+    corpus_manifest = tmp_path / "corpus.manifest.json"
+    corpus_manifest.write_text(
+        json.dumps({"source_revisions": {"fixture": "fixture-revision"}}),
+        encoding="utf-8",
+    )
+    teacher = np.zeros((len(rows), 2, 384), dtype=np.float16)
+    teacher[..., 0] = 1
+    np.save(teacher_dir / "embeddings.npy", teacher)
+    (teacher_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "teacher_key": "minilm",
+                "model_id": "fixture/teacher",
+                "model_revision": "0" * 40,
+                "query_prefix": "",
+                "document_prefix": "",
+                "selection_sha256": "legacy-selection",
+                "shape": list(teacher.shape),
+                "dtype": "float16",
+                "sha256": sha256_file(teacher_dir / "embeddings.npy"),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    output = tmp_path / "imported"
+    recipe = LegacyTernlightRecipe(
+        schema_version=1,
+        source_cache_dir=source,
+        source_corpus_manifest=corpus_manifest,
+        output_dir=output,
+        tokenizer_path=tokenizer_path,
+        source_teacher_key="minilm",
+        teacher_key="fixture-teacher",
+        teacher_license="Apache-2.0",
+        source_licenses={"fixture": "CC0-1.0"},
+        link_mode="copy",
+        verify_tokenizer=True,
+    )
+    manifest = import_legacy_ternlight_cache(recipe, Path.cwd())
+    assert manifest["samples"] == len(rows)
+    assert manifest["migration"]["tokenizer_cache_fully_verified"] is True
+    assert manifest["migration"]["license_audit_required"] is False
+    assert validate_cache(output)["teachers"]["fixture-teacher"]["norm_max_error"] == 0
 
 
 def test_teacher_recipe_requires_immutable_revision() -> None:

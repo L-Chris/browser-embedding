@@ -124,7 +124,9 @@ class TrainingRunner:
             raise ValueError("resume checkpoint experiment does not match the config")
         self.model.load_state_dict(checkpoint["state"]["model"])
         self.optimizer.load_state_dict(checkpoint["state"]["optimizer"])
-        self.scheduler.load_state_dict(checkpoint["state"]["scheduler"])
+        self.scheduler.load_state_dict(  # type: ignore[no-untyped-call]
+            checkpoint["state"]["scheduler"]
+        )
         restore_rng_state(checkpoint["rng"], self.data.generator)
         self.start_epoch = int(checkpoint["epoch"]) + 1
         self.global_step = int(checkpoint["global_step"])
@@ -157,7 +159,7 @@ class TrainingRunner:
             "state": {
                 "model": self.model.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
-                "scheduler": self.scheduler.state_dict(),
+                "scheduler": self.scheduler.state_dict(),  # type: ignore[no-untyped-call]
             },
             "metrics": metrics,
             "data_provenance": self.data.provenance,

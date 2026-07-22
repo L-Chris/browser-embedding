@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import torch
 from torch import Tensor, nn
@@ -14,7 +15,7 @@ from browser_embedding.config import ModelConfig, ObjectiveConfig
 def cosine_distillation(student: Tensor, teacher: Tensor) -> Tensor:
     if student.shape != teacher.shape:
         raise ValueError(f"student/teacher shapes differ: {student.shape} vs {teacher.shape}")
-    return (1.0 - F.cosine_similarity(student, teacher, dim=-1)).mean()
+    return cast(Tensor, (1.0 - F.cosine_similarity(student, teacher, dim=-1)).mean())
 
 
 def relational_distillation(student: Tensor, teacher: Tensor) -> Tensor:

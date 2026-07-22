@@ -115,7 +115,13 @@ def evaluate_multilingual_seed(
     if not records or any(required - record.keys() for record in records):
         raise ValueError(f"{seed_path} does not satisfy the multilingual seed contract")
     tokenizer = (
-        PreTrainedTokenizerFast(tokenizer_file=str(tokenizer_path))  # type: ignore[no-untyped-call]
+        PreTrainedTokenizerFast(  # type: ignore[no-untyped-call]
+            tokenizer_file=str(tokenizer_path),
+            pad_token="[PAD]",
+            unk_token="[UNK]",
+            cls_token="[CLS]",
+            sep_token="[SEP]",
+        )
         if tokenizer_path.is_file()
         else AutoTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
     )
