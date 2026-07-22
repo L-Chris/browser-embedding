@@ -1,0 +1,14 @@
+schema_version: 1
+source_cache_dir: ../ternlight/training/distill/cache/bilingual_pilot_100k
+source_corpus_manifest: ../ternlight/training/distill/cache/bilingual_pairs_200k.manifest.json
+output_dir: data/cache/ternlight-bilingual-100k
+tokenizer_path: assets/tokenizer.json
+source_teacher_key: minilm
+teacher_key: multilingual-minilm-l12-v2
+teacher_license: Apache-2.0
+source_licenses:
+  lcqmc: UNKNOWN-NEEDS-AUDIT
+  msmarco: UNKNOWN-NEEDS-AUDIT
+  wikimatrix: UNKNOWN-NEEDS-AUDIT
+link_mode: hardlink
+verify_tokenizer: true

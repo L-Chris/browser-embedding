@@ -112,6 +112,31 @@ class TeacherRecipe(StrictModel):
     trust_remote_code: bool = False
 
 
+class LegacyTernlightRecipe(StrictModel):
+    """Import the immutable bilingual pilot cache produced by ternlight."""
+
+    schema_version: Literal[1]
+    source_cache_dir: Path
+    source_corpus_manifest: Path
+    output_dir: Path
+    tokenizer_path: Path
+    source_teacher_key: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")
+    teacher_key: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")
+    teacher_license: str = Field(min_length=1)
+    source_licenses: dict[str, str]
+    link_mode: Literal["hardlink", "copy"] = "hardlink"
+    verify_tokenizer: bool = True
+
+    @field_validator("source_licenses")
+    @classmethod
+    def validate_source_licenses(cls, value: dict[str, str]) -> dict[str, str]:
+        if not value or any(
+            not name.strip() or not license_name.strip() for name, license_name in value.items()
+        ):
+            raise ValueError("source_licenses must contain non-empty source and license names")
+        return value
+
+
 RecipeT = TypeVar("RecipeT", bound=BaseModel)
 
 

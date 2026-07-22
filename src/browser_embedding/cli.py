@@ -12,10 +12,12 @@ from browser_embedding.config import find_project_root, load_experiment, resolve
 from browser_embedding.export import export_checkpoint, inspect_header
 from browser_embedding.preparation import (
     CacheRecipe,
+    LegacyTernlightRecipe,
     TeacherRecipe,
     TokenizerRecipe,
     build_cache,
     encode_teacher,
+    import_legacy_ternlight_cache,
     load_recipe,
     train_tokenizer,
     validate_cache,
@@ -60,6 +62,21 @@ def prepare_teacher(
     typer.echo(
         json.dumps(
             encode_teacher(config, root, requested_device=device),
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+
+
+@prepare_app.command("import-ternlight")
+def prepare_import_ternlight(
+    recipe: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+) -> None:
+    """Import ternlight's bilingual token and teacher cache without recomputation."""
+    config, root = load_recipe(recipe, LegacyTernlightRecipe)
+    typer.echo(
+        json.dumps(
+            import_legacy_ternlight_cache(config, root),
             ensure_ascii=False,
             indent=2,
         )
