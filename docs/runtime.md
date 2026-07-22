@@ -37,6 +37,10 @@ fp16 scale。ternary 每 byte 保存四个 2-bit code：`00=0, 01=+1, 10=-1`，�
 forward；`browser-embedding-wasm` 只负责 Hugging Face tokenizer 与 JS ABI。文本在 Rust 内加
 `[QRY]` / `[DOC]` 前缀，避免 JS 和训练端各自维护 tokenization 规则。
 
+WASM 构造模型时会用 BEM2 header 的 `max_sequence_length` 覆盖 tokenizer truncation 参数，
+因此超长文本在 post-processor 之前截断，`[CLS]`、角色 token 和尾部 `[SEP]` 都会保留；不能在
+tokenization 完成后简单切掉 token 数组尾部。
+
 TypeScript 层通过依赖注入加载 wasm-bindgen 产物，适配 bundler、CDN 或 Service Worker
 缓存，而不把具体加载方式写死在模型 API 中：
 
@@ -53,9 +57,10 @@ const document = model.embed("Fixing TypeScript type errors", "document");
 console.log(model.similarity(query, document));
 ```
 
-发布包会同时携带 WASM、BEM2 和 tokenizer，业务方不需要安装 Python、ONNX Runtime 或
-原生依赖。资源仍拆成独立文件，便于浏览器缓存和模型热更新；“自包含”指 npm 包闭包，
-不是强制把数 MB 权重复制进 WASM code section。
+构建 npm 包时会从根目录单向复制 tokenizer 与 manifest 到 `dist/`，根目录 artifact 始终是
+唯一来源。正式发布包会同时携带 WASM、BEM2 和 tokenizer，业务方不需要安装 Python、
+ONNX Runtime 或原生依赖。资源仍拆成独立文件，便于浏览器缓存和模型热更新；“自包含”指
+npm 包闭包，不是强制把数 MB 权重复制进 WASM code section。
 
 生成 wasm-bindgen 绑定：
 

@@ -1,0 +1,12 @@
+schema_version: 1
+cache_dir: data/cache/multilingual-200k
+key: multilingual-minilm-l12-v2
+model_id: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+revision: e8f8c211226b894fcb81acc59f3b34ba3efd5f42
+license: Apache-2.0
+query_prefix: ""
+document_prefix: ""
+output_dimension: 384
+chunk_size: 256
+batch_size: 64
+trust_remote_code: false

@@ -35,6 +35,7 @@ objective:
   relational_weight: 0.1
   retrieval_weight: 0.2
   temperature: 0.05
+  distillation_dims: [64]
 
 quantization:
   enabled: true

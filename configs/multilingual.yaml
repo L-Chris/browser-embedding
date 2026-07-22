@@ -17,17 +17,17 @@ model:
 deployment:
   embedding_format: int4
   max_model_bytes: 3000000
-  max_bundle_bytes: 7000000
+  max_bundle_bytes: 8000000
   max_working_memory_bytes: 32000000
   wasm_binary_budget_bytes: 3200000
-  tokenizer_asset_budget_bytes: 1000000
-  tokenizer_working_memory_bytes: 3000000
+  tokenizer_asset_budget_bytes: 2500000
+  tokenizer_working_memory_bytes: 6000000
   enforce_budget: true
 
 data:
   kind: memmap
   cache_dir: data/cache/multilingual-200k
-  teacher_key: multilingual-e5-small
+  teacher_key: multilingual-minilm-l12-v2
   tokenizer_path: assets/tokenizer.json
 
 objective:
@@ -35,6 +35,7 @@ objective:
   relational_weight: 0.1
   retrieval_weight: 0.2
   temperature: 0.05
+  distillation_dims: [384]
 
 quantization:
   enabled: true

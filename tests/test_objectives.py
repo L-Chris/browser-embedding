@@ -18,6 +18,7 @@ def test_aligned_pairs_have_lower_retrieval_loss() -> None:
 def test_matryoshka_objective_backpropagates() -> None:
     config, _ = load_experiment(Path("configs/smoke.yaml"))
     objective = MatryoshkaObjective(config.model, config.objective)
+    assert objective.distillation_dimensions == (config.model.output_dim,)
     student = F.normalize(torch.randn(4, 2, config.model.output_dim), dim=-1).requires_grad_()
     teacher = F.normalize(torch.randn_like(student), dim=-1)
     result = objective(student, teacher, torch.arange(4))

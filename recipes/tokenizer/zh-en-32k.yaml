@@ -1,0 +1,11 @@
+schema_version: 1
+input_path: data/intermediate/multilingual-pairs-v1.jsonl
+input_format: jsonl_pairs
+output_path: assets/tokenizer.json
+manifest_path: assets/tokenizer.manifest.json
+corpus:
+  name: multilingual-pairs-v1
+  revision: canonical-jsonl-sha256
+  license: mixed-see-pair-metadata
+vocab_size: 32000
+asset_budget_bytes: 2500000

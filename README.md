@@ -40,6 +40,20 @@ smoke 配置只使用确定性的合成中英 pair，不下载数据集或 teach
 正式训练从 `configs/multilingual.yaml` 开始。数据准备适配器的输入契约见
 [架构文档](docs/architecture.md)，训练阶段不与具体数据源或 teacher 实现耦合。
 
+离线制品通过同一个 CLI 构建和审计：
+
+```bash
+uv run --extra data browser-embedding prepare cache \
+  --recipe recipes/cache/multilingual-200k.yaml
+uv run --extra data browser-embedding prepare teacher \
+  --recipe recipes/teachers/multilingual-minilm-l12-v2.yaml
+uv run --extra data browser-embedding prepare validate \
+  --cache data/cache/multilingual-200k
+```
+
+仓库包含一个可贯通 Python 与 WASM 的 32k Unigram tokenizer candidate。它可用于架构开发，
+但其来源语料包含早期评估 seed，因此正式质量训练前应通过已提交 recipe 从无评估污染的语料重训。
+
 ## 文档
 
 - [系统与代码架构](docs/architecture.md)

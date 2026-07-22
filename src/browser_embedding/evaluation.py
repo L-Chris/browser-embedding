@@ -102,10 +102,7 @@ def evaluate_multilingual_seed(
     small dependency surface and never touches the network.
     """
     try:
-        from transformers import (  # type: ignore[import-not-found]
-            AutoTokenizer,
-            PreTrainedTokenizerFast,
-        )
+        from transformers import AutoTokenizer, PreTrainedTokenizerFast
     except ImportError as error:  # pragma: no cover - exercised in full env
         raise RuntimeError("multilingual seed evaluation requires the 'data' extra") from error
 
@@ -118,7 +115,7 @@ def evaluate_multilingual_seed(
     if not records or any(required - record.keys() for record in records):
         raise ValueError(f"{seed_path} does not satisfy the multilingual seed contract")
     tokenizer = (
-        PreTrainedTokenizerFast(tokenizer_file=str(tokenizer_path))
+        PreTrainedTokenizerFast(tokenizer_file=str(tokenizer_path))  # type: ignore[no-untyped-call]
         if tokenizer_path.is_file()
         else AutoTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
     )

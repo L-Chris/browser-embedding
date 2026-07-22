@@ -1,5 +1,5 @@
 use browser_embedding_core::Encoder;
-use tokenizers::Tokenizer;
+use tokenizers::{Tokenizer, TruncationParams};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -12,8 +12,15 @@ pub struct BrowserModel {
 impl BrowserModel {
     #[wasm_bindgen(constructor)]
     pub fn new(model_bytes: &[u8], tokenizer_json: &[u8]) -> Result<BrowserModel, JsError> {
-        Encoder::from_bytes(model_bytes).map_err(|error| JsError::new(&error.to_string()))?;
-        let tokenizer = Tokenizer::from_bytes(tokenizer_json)
+        let encoder =
+            Encoder::from_bytes(model_bytes).map_err(|error| JsError::new(&error.to_string()))?;
+        let mut tokenizer = Tokenizer::from_bytes(tokenizer_json)
+            .map_err(|error| JsError::new(&error.to_string()))?;
+        tokenizer
+            .with_truncation(Some(TruncationParams {
+                max_length: encoder.header().max_sequence_length,
+                ..TruncationParams::default()
+            }))
             .map_err(|error| JsError::new(&error.to_string()))?;
         Ok(Self {
             model_bytes: model_bytes.to_vec(),

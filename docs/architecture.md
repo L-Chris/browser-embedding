@@ -18,19 +18,24 @@ browser-embedding 只解决一个问题：在浏览器内完成中文、英文�
 | 实际可训练参数 | 3,473,088 |
 | 逻辑深度参数量（计入 3 次 block） | 4,062,912 |
 | BEM2 模型文件 | 1,853,940 bytes |
-| 模型 + WASM + tokenizer 预算 | 6,053,940 bytes |
-| batch=1 推理工作集上界 | 7,807,656 bytes |
+| 模型 + WASM + tokenizer 预算 | 7,553,940 bytes |
+| batch=1 推理工作集上界 | 10,807,656 bytes |
 
 这些是由配置和 BEM2 section 公式直接计算出的契约值，不是营销估算。bundle 采用当前
-约 3.0 MB WASM 的 3.2 MB 上界和 tokenizer 的 1 MB 上界；工作集还计入 JS/Rust 双份模型
+约 3.0 MB WASM 的 3.2 MB 上界和 tokenizer 的 2.5 MB 上界；工作集还计入 JS/Rust 双份模型
 bytes 与 tokenizer heap。实际导出器会断言模型文件字节数与预算器完全一致。
 
 ## 2. 系统分层
 
 ```text
-configs/*.yaml
-    │ 强类型校验 + 浏览器预算
-    ▼
+source adapters → canonical pair JSONL
+                         │
+recipes/*.yaml ──────────┼→ Preparation → token memmap → teacher targets → validate
+                         │                                      │
+configs/*.yaml → 强类型校验 + 浏览器预算                         │ immutable cache
+                         │                                      │
+                         └──────────────────┬───────────────────┘
+                                            ▼
 ┌──────────────────────── Python / training ────────────────────────┐
 │ Data adapter → BrowserEncoder → MatryoshkaObjective → Runner      │
 │                                   │                               │
@@ -118,11 +123,15 @@ w_forward = w + strength * stop_gradient(q * scale - w)
 - 不依赖第三方模块替换器，也不会漏量化某个新增 linear；
 - exporter 与 runtime 只需识别一种 ternary 规则。
 
-目标函数在每个 Matryoshka 维度上计算并取平均：
+目标函数把 teacher 对齐与 Matryoshka 检索分开：
 
-- pointwise cosine distillation：对齐 teacher 向量；
-- relational distillation：对齐 batch 内相似度几何；
-- symmetric multi-positive InfoNCE：学习 query/document 检索，并用 `group_id` 避免假负例。
+- 384 维 pointwise cosine：对齐 teacher 向量；
+- 384 维 relational distillation：对齐 batch 内相似度几何；
+- 64/128/256/384 symmetric multi-positive InfoNCE：学习 query/document 检索，并用
+  `group_id` 避免假负例。
+
+默认 teacher 不是 Matryoshka teacher，因此不蒸馏它的任意低维前缀。若未来引入按嵌套维度
+训练的 teacher，可通过 `distillation_dims` 显式扩展，不能隐式切片。
 
 ## 5. 代码职责
 
@@ -132,6 +141,7 @@ w_forward = w + strength * stop_gradient(q * scale - w)
 | `model.py` | 与浏览器图一致的纯 PyTorch encoder |
 | `quantization.py` | ternary STE、INT4 和 bit packing 的唯一数学来源 |
 | `data.py` | pair data port、memmap adapter、synthetic smoke adapter |
+| `preparation/` | pair/tokenizer/teacher 不可变制品构建、恢复和 SHA 审计 |
 | `objectives.py` | 可组合的 Matryoshka 蒸馏/检索损失 |
 | `evaluation.py` | pair retrieval 与六切片多语评估 |
 | `checkpoint.py` | 独立版本的训练状态与 RNG 恢复 |

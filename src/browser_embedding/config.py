@@ -202,11 +202,17 @@ class ObjectiveConfig(StrictModel):
     relational_weight: float = Field(ge=0.0)
     retrieval_weight: float = Field(ge=0.0)
     temperature: float = Field(gt=0.0)
+    distillation_dims: tuple[int, ...] | None = None
 
     @model_validator(mode="after")
     def validate_weights(self) -> ObjectiveConfig:
         if self.pointwise_weight + self.relational_weight + self.retrieval_weight == 0:
             raise ValueError("at least one objective weight must be positive")
+        if self.distillation_dims is not None and (
+            not self.distillation_dims
+            or tuple(sorted(set(self.distillation_dims))) != self.distillation_dims
+        ):
+            raise ValueError("distillation_dims must be unique and strictly increasing")
         return self
 
 

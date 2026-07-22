@@ -1,0 +1,13 @@
+schema_version: 1
+input_path: data/examples/pairs.jsonl
+output_dir: data/cache/example
+tokenizer_path: assets/tokenizer.json
+seed: 42
+sample_limit: 6
+max_sequence_length: 128
+vocab_size: 32000
+batch_size: 6
+split:
+  train: 0.9
+  validation: 0.05
+  test: 0.05

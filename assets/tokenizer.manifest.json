@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "artifact": "browser-embedding-tokenizer-v1-candidate",
+  "status": "candidate",
+  "quality_claims_allowed": false,
+  "evaluation_data_in_training_corpus": true,
+  "replacement_recipe": "recipes/tokenizer/zh-en-32k.yaml",
+  "serialization": {
+    "tokenizers_version": "0.22.2",
+    "model": "Unigram",
+    "normalizer": "NFKC",
+    "pre_tokenizer": "ByteLevel(add_prefix_space=false)",
+    "vocab_size": 32000,
+    "special_token_ids": {
+      "[PAD]": 0,
+      "[UNK]": 1,
+      "[CLS]": 2,
+      "[SEP]": 3,
+      "[QRY]": 4,
+      "[DOC]": 5
+    }
+  },
+  "file": {
+    "path": "assets/tokenizer.json",
+    "bytes": 1139925,
+    "sha256": "d3a559a438a8c257bdbe02cbed24fa079d4caa92b94e185c778153c122b061a0"
+  },
+  "source_corpus": {
+    "dataset": "wikimedia/wikipedia",
+    "revision": "b04c8d1ceb2f5cd4588862100d08de323dccfbaa",
+    "english_segments": 50000,
+    "chinese_segments": 50000,
+    "note": "This candidate also included repeated multilingual evaluation seed text; retrain before formal quality claims."
+  },
+  "audit": {
+    "pilot_encoded_texts": 200000,
+    "unknown_tokens": 0,
+    "python_fast_tokenizer": "pass"
+  }
+}

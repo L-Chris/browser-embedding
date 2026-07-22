@@ -21,8 +21,44 @@ config → data → forward → loss → backward → optimizer/scheduler
 
 ```bash
 uv sync --extra data --extra dev
+uv run browser-embedding prepare cache --recipe recipes/cache/multilingual-200k.yaml
+uv run browser-embedding prepare teacher \
+  --recipe recipes/teachers/multilingual-minilm-l12-v2.yaml
+uv run browser-embedding prepare validate --cache data/cache/multilingual-200k
 uv run browser-embedding train --config configs/multilingual.yaml
 ```
+
+准备层和训练层是两个进程边界。准备层可以下载数据和 teacher；训练 runner 不联网，只读取已经
+通过校验的不可变 cache。
+
+仓库中的小型例子可以独立验证 tokenizer → memmap → manifest：
+
+```bash
+uv run --extra data browser-embedding prepare cache --recipe recipes/cache/example.yaml
+uv run --extra data browser-embedding prepare validate --cache data/cache/example
+```
+
+## Canonical pair v1
+
+数据源 adapter 输出 UTF-8 JSONL，每行结构如下：
+
+```json
+{
+  "id": "optional-stable-id",
+  "group_id": "same-concept-or-document-group",
+  "query": "如何修复 TypeScript 类型错误？",
+  "document": "Fixing TypeScript type errors",
+  "variant": "mixed_en",
+  "source": "example-source",
+  "source_revision": "immutable-revision",
+  "source_license": "SPDX-or-upstream-license",
+  "split": null
+}
+```
+
+省略 `split` 时按 `seed + group_id` 确定性生成 90/5/5 split；同一 group 永远不会跨集合。
+准备器进行 NFKC、空白规范化、exact dedup 和按语言切片的确定性抽样。正式数据源可变化，但
+canonical schema 不随数据平台变化。
 
 ## Memmap cache v1
 
@@ -31,16 +67,19 @@ uv run browser-embedding train --config configs/multilingual.yaml
 ```text
 data/cache/multilingual-200k/
 ├── manifest.json
+├── texts.jsonl             teacher adapter 的行对齐文本，不由训练器读取
 ├── input_ids.npy           uint32 [N, 2, max_sequence_length]
 ├── attention_mask.npy      uint8  [N, 2, max_sequence_length]
 ├── split_codes.npy         uint8  [N], train=0/validation=1/test=2
-├── metadata.jsonl          每行至少含 group_id、variant
+├── metadata.jsonl          id/group/source/license/split，不含训练张量
 └── teachers/
-    └── multilingual-e5-small.npy  fp16/float32 [N, 2, output_dim]
+    ├── multilingual-minilm-l12-v2.npy
+    ├── multilingual-minilm-l12-v2.manifest.json
+    └── multilingual-minilm-l12-v2.progress.json
 ```
 
 第二维固定为 `[query, document]`。token cache 必须已经包含 `[QRY]` / `[DOC]` 前缀；
-teacher 向量必须 L2-normalized。`group_id` 相同的文档会被 InfoNCE 当作多个正例，而不是
+teacher 向量固定为 L2-normalized float16。`group_id` 相同的文档会被 InfoNCE 当作多个正例，而不是
 batch 内负例。`variant` 必须来自：
 
 - `en_en`
@@ -52,6 +91,11 @@ batch 内负例。`variant` 必须来自：
 
 数据准备和 teacher 推理是 adapter，不进入训练 runner。这样更换数据集、teacher 或远程
 缓存实现时，不需要修改模型与训练循环。
+
+Teacher job 必须在 recipe 中固定 40 位模型 revision；不能运行时追踪浮动 `main`。中断时只在
+selection hash、模型 revision、shape 和 device 全部一致时续跑。当前默认 teacher 来自旧 pilot
+的对照结论，但新模型只在 384 维执行 pointwise/relational 蒸馏；64/128/256/384 都执行 student
+retrieval loss，避免把非 Matryoshka teacher 的低维前缀误当成监督目标。
 
 ## 运行产物
 

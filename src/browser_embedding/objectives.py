@@ -62,6 +62,10 @@ class MatryoshkaObjective(nn.Module):
     def __init__(self, model: ModelConfig, config: ObjectiveConfig) -> None:
         super().__init__()
         self.dimensions = model.matryoshka_dims
+        self.distillation_dimensions = config.distillation_dims or (model.output_dim,)
+        unsupported = set(self.distillation_dimensions) - set(self.dimensions)
+        if unsupported:
+            raise ValueError(f"distillation dimensions are not Matryoshka outputs: {unsupported}")
         self.config = config
 
     def forward(self, student: Tensor, teacher: Tensor, group_ids: Tensor) -> ObjectiveResult:
@@ -76,23 +80,27 @@ class MatryoshkaObjective(nn.Module):
         }
         for dimension in self.dimensions:
             student_view = F.normalize(student[..., :dimension], dim=-1)
-            teacher_view = F.normalize(teacher[..., :dimension], dim=-1)
-            flat_student = student_view.flatten(0, 1)
-            flat_teacher = teacher_view.flatten(0, 1)
-            totals["pointwise"] = totals["pointwise"] + cosine_distillation(
-                flat_student, flat_teacher
-            )
-            totals["relational"] = totals["relational"] + relational_distillation(
-                flat_student, flat_teacher
-            )
+            if dimension in self.distillation_dimensions:
+                teacher_view = F.normalize(teacher[..., :dimension], dim=-1)
+                flat_student = student_view.flatten(0, 1)
+                flat_teacher = teacher_view.flatten(0, 1)
+                totals["pointwise"] = totals["pointwise"] + cosine_distillation(
+                    flat_student, flat_teacher
+                )
+                totals["relational"] = totals["relational"] + relational_distillation(
+                    flat_student, flat_teacher
+                )
             totals["retrieval"] = totals["retrieval"] + multi_positive_infonce(
                 student_view[:, 0],
                 student_view[:, 1],
                 group_ids,
                 self.config.temperature,
             )
-        divisor = float(len(self.dimensions))
-        averaged = {name: value / divisor for name, value in totals.items()}
+        averaged = {
+            "pointwise": totals["pointwise"] / float(len(self.distillation_dimensions)),
+            "relational": totals["relational"] / float(len(self.distillation_dimensions)),
+            "retrieval": totals["retrieval"] / float(len(self.dimensions)),
+        }
         loss = (
             self.config.pointwise_weight * averaged["pointwise"]
             + self.config.relational_weight * averaged["relational"]

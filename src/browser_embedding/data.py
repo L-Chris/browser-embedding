@@ -86,8 +86,10 @@ class MemmapPairDataset(PairDataset):
         input_ids.npy          [pairs, 2, sequence]
         attention_mask.npy     [pairs, 2, sequence]
         split_codes.npy        [pairs]
+        texts.jsonl            row-aligned query/document text for offline teachers
         metadata.jsonl         {group_id, variant, ...}
         teachers/<key>.npy     [pairs, 2, output_dim]
+        teachers/<key>.manifest.json
     """
 
     def __init__(self, root: Path, teacher_key: str, split: str, model: ModelConfig) -> None:
@@ -97,6 +99,10 @@ class MemmapPairDataset(PairDataset):
         self.manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if self.manifest.get("schema_version") != 1:
             raise ValueError(f"unsupported data cache schema in {manifest_path}")
+        teacher_manifest_path = root / "teachers" / f"{teacher_key}.manifest.json"
+        self.teacher_manifest = json.loads(teacher_manifest_path.read_text(encoding="utf-8"))
+        if self.teacher_manifest.get("selection_sha256") != self.manifest.get("selection_sha256"):
+            raise ValueError("teacher targets and token cache use different row selections")
         self.input_ids = np.load(root / "input_ids.npy", mmap_mode="r")
         self.attention_mask = np.load(root / "attention_mask.npy", mmap_mode="r")
         self.split_codes = np.load(root / "split_codes.npy", mmap_mode="r")
@@ -183,6 +189,7 @@ def build_data(
             "cache_dir": str(cache_dir),
             "teacher_key": data.teacher_key,
             "manifest": train_dataset.manifest,
+            "teacher_manifest": train_dataset.teacher_manifest,
         }
 
     generator = torch.Generator().manual_seed(seed)
