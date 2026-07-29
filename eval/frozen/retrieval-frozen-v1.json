@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "suite_id": "retrieval-frozen-v1",
+  "description": "Frozen multilingual and scientific retrieval test suite for release comparisons.",
+  "test_policy": {
+    "allowed_use": "aggregate release evaluation only",
+    "forbidden_use": "checkpoint selection, threshold tuning, prompt tuning, or per-query error-driven development",
+    "revision_rule": "Any source, normalization, relevance, or metric change requires a new suite id."
+  },
+  "normalization": {
+    "recipe_version": 1,
+    "document_text": "strip(title) + ('\\n' when both fields are non-empty) + strip(text)",
+    "query_text": "strip(text)",
+    "ordering": "UTF-8 code-point order by id; qrels by query id then corpus id",
+    "relevance": "retain qrels with integer score > 0; duplicate pairs keep maximum score",
+    "queries": "retain only queries present in positive test qrels",
+    "candidate_pool": "complete normalized corpus for each dataset"
+  },
+  "metrics": [
+    "nDCG@10",
+    "MAP@100",
+    "MRR@10",
+    "Recall@1",
+    "Recall@3",
+    "Recall@10",
+    "Recall@100"
+  ],
+  "datasets": [
+    {
+      "id": "mlqa-eng-eng-test",
+      "family": "MLQARetrieval",
+      "slice": "eng-eng",
+      "license": "CC-BY-SA-3.0",
+      "format": "mteb_parquet",
+      "source": {
+        "repo_id": "mteb/MLQARetrieval",
+        "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+        "corpus": "eng-eng-corpus/test-00000-of-00001.parquet",
+        "queries": "eng-eng-queries/test-00000-of-00001.parquet",
+        "qrels": "eng-eng-qrels/test-00000-of-00001.parquet"
+      }
+    },
+    {
+      "id": "mlqa-zho-zho-test",
+      "family": "MLQARetrieval",
+      "slice": "zho-zho",
+      "license": "CC-BY-SA-3.0",
+      "format": "mteb_parquet",
+      "source": {
+        "repo_id": "mteb/MLQARetrieval",
+        "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+        "corpus": "zho-zho-corpus/test-00000-of-00001.parquet",
+        "queries": "zho-zho-queries/test-00000-of-00001.parquet",
+        "qrels": "zho-zho-qrels/test-00000-of-00001.parquet"
+      }
+    },
+    {
+      "id": "mlqa-eng-zho-test",
+      "family": "MLQARetrieval",
+      "slice": "eng-zho",
+      "license": "CC-BY-SA-3.0",
+      "format": "mteb_parquet",
+      "source": {
+        "repo_id": "mteb/MLQARetrieval",
+        "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+        "corpus": "eng-zho-corpus/test-00000-of-00001.parquet",
+        "queries": "eng-zho-queries/test-00000-of-00001.parquet",
+        "qrels": "eng-zho-qrels/test-00000-of-00001.parquet"
+      }
+    },
+    {
+      "id": "mlqa-zho-eng-test",
+      "family": "MLQARetrieval",
+      "slice": "zho-eng",
+      "license": "CC-BY-SA-3.0",
+      "format": "mteb_parquet",
+      "source": {
+        "repo_id": "mteb/MLQARetrieval",
+        "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+        "corpus": "zho-eng-corpus/test-00000-of-00001.parquet",
+        "queries": "zho-eng-queries/test-00000-of-00001.parquet",
+        "qrels": "zho-eng-qrels/test-00000-of-00001.parquet"
+      }
+    },
+    {
+      "id": "scifact-test",
+      "family": "BEIR/SciFact",
+      "slice": "eng-scientific",
+      "license": "CC-BY-SA-4.0",
+      "format": "beir_parquet_tsv",
+      "source": {
+        "repo_id": "BeIR/scifact",
+        "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+        "corpus": "corpus/corpus-00000-of-00001.parquet",
+        "queries": "queries/queries-00000-of-00001.parquet"
+      },
+      "qrels_source": {
+        "repo_id": "BeIR/scifact-qrels",
+        "revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+        "qrels": "test.tsv"
+      }
+    }
+  ]
+}

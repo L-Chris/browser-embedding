@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct BrowserModel {
-    model_bytes: Vec<u8>,
+    encoder: Encoder,
     tokenizer: Tokenizer,
 }
 
@@ -22,20 +22,15 @@ impl BrowserModel {
                 ..TruncationParams::default()
             }))
             .map_err(|error| JsError::new(&error.to_string()))?;
-        Ok(Self {
-            model_bytes: model_bytes.to_vec(),
-            tokenizer,
-        })
+        Ok(Self { encoder, tokenizer })
     }
 
-    pub fn model_info(&self) -> Result<String, JsError> {
-        let encoder = Encoder::from_bytes(&self.model_bytes)
-            .map_err(|error| JsError::new(&error.to_string()))?;
-        let header = encoder.header();
-        Ok(format!(
+    pub fn model_info(&self) -> String {
+        let header = self.encoder.header();
+        format!(
             "BEM2 vocab={} hidden={} output={} repeats={}",
             header.vocab_size, header.hidden_dim, header.output_dim, header.num_repeats
-        ))
+        )
     }
 
     pub fn embed(&self, text: &str, role: &str, dimension: usize) -> Result<Vec<f32>, JsError> {
@@ -44,8 +39,6 @@ impl BrowserModel {
             "document" => "[DOC] ",
             _ => return Err(JsError::new("role must be 'query' or 'document'")),
         };
-        let encoder = Encoder::from_bytes(&self.model_bytes)
-            .map_err(|error| JsError::new(&error.to_string()))?;
         let encoded = self
             .tokenizer
             .encode(format!("{prefix}{text}"), true)
@@ -53,10 +46,10 @@ impl BrowserModel {
         let length = encoded
             .get_ids()
             .len()
-            .min(encoder.header().max_sequence_length);
+            .min(self.encoder.header().max_sequence_length);
         let input_ids = &encoded.get_ids()[..length];
         let attention_mask = vec![1_u8; length];
-        encoder
+        self.encoder
             .encode_tokens(input_ids, &attention_mask, dimension)
             .map_err(|error| JsError::new(&error.to_string()))
     }

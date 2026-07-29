@@ -1,0 +1,250 @@
+{
+  "datasets": [
+    {
+      "artifacts": {
+        "corpus": {
+          "bytes": 10033822,
+          "path": "datasets/mlqa-eng-eng-test/corpus.jsonl",
+          "records": 9916,
+          "sha256": "614637303280ec442400e9b96013fbf5a6fab997bc994d40219f1c7143f2b65a"
+        },
+        "qrels": {
+          "bytes": 636623,
+          "path": "datasets/mlqa-eng-eng-test/qrels.jsonl",
+          "records": 11590,
+          "sha256": "a87a6f26e990962f9bfca45a00a9007e55130ab46529acd95d760f2e59885c2b"
+        },
+        "queries": {
+          "bytes": 845629,
+          "path": "datasets/mlqa-eng-eng-test/queries.jsonl",
+          "records": 11582,
+          "sha256": "5e58f56e565817190a314f318c0258b3e6b4bd5184a5c90b99e7ab4e25891ab7"
+        }
+      },
+      "family": "MLQARetrieval",
+      "id": "mlqa-eng-eng-test",
+      "license": "CC-BY-SA-3.0",
+      "positive_qrels": 11590,
+      "slice": "eng-eng"
+    },
+    {
+      "artifacts": {
+        "corpus": {
+          "bytes": 3166726,
+          "path": "datasets/mlqa-zho-zho-test/corpus.jsonl",
+          "records": 4546,
+          "sha256": "9c3f496d4ee27a03330c8695dd2d393b99f6c0fd1d101ea81ce0cbd3354bf13d"
+        },
+        "qrels": {
+          "bytes": 280177,
+          "path": "datasets/mlqa-zho-zho-test/qrels.jsonl",
+          "records": 5137,
+          "sha256": "4497964b7087d7b507897e0cd0265ef51a23b878a25d086f7384ab26b75c1e68"
+        },
+        "queries": {
+          "bytes": 348524,
+          "path": "datasets/mlqa-zho-zho-test/queries.jsonl",
+          "records": 5136,
+          "sha256": "9dd5a480ddb5e4c2d7b49a8779825239ff4b183371cdc0c52d9e653a31d969cf"
+        }
+      },
+      "family": "MLQARetrieval",
+      "id": "mlqa-zho-zho-test",
+      "license": "CC-BY-SA-3.0",
+      "positive_qrels": 5137,
+      "slice": "zho-zho"
+    },
+    {
+      "artifacts": {
+        "corpus": {
+          "bytes": 4881494,
+          "path": "datasets/mlqa-eng-zho-test/corpus.jsonl",
+          "records": 4468,
+          "sha256": "e57d063567fe121799dda3fee1f25e17bfa808e2f18f1ac0ddf0b2e936e39f72"
+        },
+        "qrels": {
+          "bytes": 280136,
+          "path": "datasets/mlqa-eng-zho-test/qrels.jsonl",
+          "records": 5137,
+          "sha256": "7b319f86d61f4582227c511b3d360d053d0ab3bfae959370a976bab52a9582a3"
+        },
+        "queries": {
+          "bytes": 348524,
+          "path": "datasets/mlqa-eng-zho-test/queries.jsonl",
+          "records": 5136,
+          "sha256": "a596646d61961a1cb57f97106c8c56c6ed3f610cc6eaafda919e452a338636f7"
+        }
+      },
+      "family": "MLQARetrieval",
+      "id": "mlqa-eng-zho-test",
+      "license": "CC-BY-SA-3.0",
+      "positive_qrels": 5137,
+      "slice": "eng-zho"
+    },
+    {
+      "artifacts": {
+        "corpus": {
+          "bytes": 3166726,
+          "path": "datasets/mlqa-zho-eng-test/corpus.jsonl",
+          "records": 4546,
+          "sha256": "9c3f496d4ee27a03330c8695dd2d393b99f6c0fd1d101ea81ce0cbd3354bf13d"
+        },
+        "qrels": {
+          "bytes": 280177,
+          "path": "datasets/mlqa-zho-eng-test/qrels.jsonl",
+          "records": 5137,
+          "sha256": "8771519f9197fb6b3891e6d6df4711209ea25a212275e67b1c781dae44d1d6cf"
+        },
+        "queries": {
+          "bytes": 377099,
+          "path": "datasets/mlqa-zho-eng-test/queries.jsonl",
+          "records": 5135,
+          "sha256": "84452856b75332b976c81fa704048165666f93f1dcd76867a4aded86429b8ff8"
+        }
+      },
+      "family": "MLQARetrieval",
+      "id": "mlqa-zho-eng-test",
+      "license": "CC-BY-SA-3.0",
+      "positive_qrels": 5137,
+      "slice": "zho-eng"
+    },
+    {
+      "artifacts": {
+        "corpus": {
+          "bytes": 7927504,
+          "path": "datasets/scifact-test/corpus.jsonl",
+          "records": 5183,
+          "sha256": "eb6cf2438c27e3698e9bbe906c8996b95421aad3868f677783b8d40a2eecd81f"
+        },
+        "qrels": {
+          "bytes": 18923,
+          "path": "datasets/scifact-test/qrels.jsonl",
+          "records": 339,
+          "sha256": "6f6d2dc3ff203914b4ffb16d026cdb1766291f9ef5faad3e39be065ffdbad321"
+        },
+        "queries": {
+          "bytes": 34077,
+          "path": "datasets/scifact-test/queries.jsonl",
+          "records": 300,
+          "sha256": "afb8f4682aaadee3afef7bdf2e1dfffd16b812a6bdcca9aafbafaea97a4e7f24"
+        }
+      },
+      "family": "BEIR/SciFact",
+      "id": "scifact-test",
+      "license": "CC-BY-SA-4.0",
+      "positive_qrels": 339,
+      "slice": "eng-scientific"
+    }
+  ],
+  "normalization_recipe_version": 1,
+  "schema_version": 1,
+  "sources": [
+    {
+      "bytes": 4469916,
+      "filename": "corpus/corpus-00000-of-00001.parquet",
+      "repo_id": "BeIR/scifact",
+      "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+      "sha256": "243324b35f03d82bd6d98a5f575966876e86cad7ce16e5333a35b1b793dc4f45"
+    },
+    {
+      "bytes": 64982,
+      "filename": "queries/queries-00000-of-00001.parquet",
+      "repo_id": "BeIR/scifact",
+      "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+      "sha256": "1c37956c5dc8b810b60302323c24d1a9e79e26411ba8f5ad9d0888642e2a9034"
+    },
+    {
+      "bytes": 5389,
+      "filename": "test.tsv",
+      "repo_id": "BeIR/scifact-qrels",
+      "revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+      "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+    },
+    {
+      "bytes": 6255742,
+      "filename": "eng-eng-corpus/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "9bc65b2beee459f43c2a421eab31a5a8542a6a8141749ad34d1bd6d9915a76ad"
+    },
+    {
+      "bytes": 143839,
+      "filename": "eng-eng-qrels/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "575d618ede6181b6c5528f0a19842e26a48e513ffe76ebfce2082d491ceefe47"
+    },
+    {
+      "bytes": 475389,
+      "filename": "eng-eng-queries/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "442a35a47eac8785b6e9bc942b5110f57210d3347f5801e8c9a6974cb6bb5df2"
+    },
+    {
+      "bytes": 3034218,
+      "filename": "eng-zho-corpus/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "7e0b3879d2d828b1ed23704a8b4a6a7f79db4150d037e4a44e01dc7b441ba3e4"
+    },
+    {
+      "bytes": 62986,
+      "filename": "eng-zho-qrels/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "0495b678b070883e48907829b0e5311fae331cb684c76df782537f17f6ea2ecb"
+    },
+    {
+      "bytes": 211177,
+      "filename": "eng-zho-queries/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "894c30f64ef7948d583325f7e855ffca77aa5588bae0143f40bc812f6c398b24"
+    },
+    {
+      "bytes": 2235152,
+      "filename": "zho-eng-corpus/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "8743e0aadefabbc35b3fc86911650e747d562e5a0f76d6037c538c0cc36f8b93"
+    },
+    {
+      "bytes": 63080,
+      "filename": "zho-eng-qrels/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "836f8fde83f7bd4212537512208f2074e65b225c954741c836d472568679f1ed"
+    },
+    {
+      "bytes": 213424,
+      "filename": "zho-eng-queries/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "3dc1083d78f257d44887463ed830b82309c8391913eb9008b3231cd5ff3f6cdc"
+    },
+    {
+      "bytes": 2235152,
+      "filename": "zho-zho-corpus/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "8743e0aadefabbc35b3fc86911650e747d562e5a0f76d6037c538c0cc36f8b93"
+    },
+    {
+      "bytes": 63117,
+      "filename": "zho-zho-qrels/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "501cf3ce2a3f17431ec0e2aa4fb9eb3d3bf05c2862bcd8227190b5fa08981797"
+    },
+    {
+      "bytes": 210799,
+      "filename": "zho-zho-queries/test-00000-of-00001.parquet",
+      "repo_id": "mteb/MLQARetrieval",
+      "revision": "cf59ddd8f4aaf39ce1869361e09252698c340945",
+      "sha256": "461e2f7ff8f5e0314158b7602328d84fafa57c1dd8857cf3a6591f07e1865d89"
+    }
+  ],
+  "suite_id": "retrieval-frozen-v1",
+  "suite_manifest_sha256": "79d696029defc94e61cb32a93ab0791c79bab5bf289567fcb489823e21a81821"
+}

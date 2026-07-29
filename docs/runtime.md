@@ -71,14 +71,17 @@ pnpm build:wasm
 
 ## 性能演进顺序
 
-当前 Rust graph 是可读性优先的数值 reference，也是 Python/Rust parity 的基准。优化按
-不改变 BEM2 的顺序推进：
+Rust graph 同时是 Python/Rust parity 的基准和实际 WASM 热路径。已完成的优化不改变
+BEM2 下载格式：
 
-1. 初始化时将共享 ternary matrices 解包为 i8，权重仍只下载 2-bit；
-2. WASM SIMD128 对四路 accumulator 做无分支 add/sub；
-3. 复用 attention/FFN scratch buffer，消除每层分配；
-4. 对短文本采用实际 token length，不补齐到 128；
-5. benchmark 确认收益后再考虑 WebGPU backend。
+1. `BrowserModel` 构造时只校验和解析一次 BEM2，不在每次 `embed()` 重算 SHA-256；
+2. 初始化时将共享 2-bit ternary matrices 解包为只读 fp32 `{-1, 0, +1}` runtime weights，
+   并将 LayerNorm、position embedding 与输出 projection 的 fp16 参数预解码；
+3. WASM SIMD128 使用四路 fp32 accumulator 执行 ternary matrix dot product；
+4. 短文本始终按实际 token length 执行，不补齐到 128。
+
+下一阶段是在不改变公开同步 API 的前提下复用 attention/FFN scratch buffer。只有统一
+benchmark 证明有稳定收益后才考虑 WebGPU backend。
 
 任何优化必须通过 Python quantized forward ↔ Rust native ↔ WASM 三方 parity；只有浏览器
 真机 benchmark 能决定是否保留优化。

@@ -5,6 +5,13 @@
   "scripts": {
     "build:wasm": "bash scripts/build-wasm.sh",
     "build": "pnpm build:wasm && pnpm --filter browser-embedding build",
+    "benchmark:compare": "node eval/benchmarks/compare.mjs",
+    "eval:frozen:prepare": "uv run --extra data python eval/frozen/prepare.py",
+    "eval:frozen:embed:browser": "node eval/frozen/embed.mjs --engine browser --engine-id browser-embedding",
+    "eval:frozen:embed:fork": "node eval/frozen/embed.mjs --engine ternlight --engine-id ternlight-fork",
+    "eval:retrieval:compare": "node eval/retrieval/compare.mjs",
+    "test:frozen": "uv run --extra dev --extra data pytest tests/test_frozen_retrieval.py",
+    "test:retrieval": "node --test eval/retrieval/*.test.mjs",
     "check": "pnpm --filter browser-embedding check",
     "test": "pnpm --filter browser-embedding test"
   }

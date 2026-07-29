@@ -7,6 +7,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 artifacts/
+eval/benchmarks/results/
+eval/frozen/cache/
+eval/frozen/results/
+eval/retrieval/results/
 data/cache/
 node_modules/
 packages/browser/dist/

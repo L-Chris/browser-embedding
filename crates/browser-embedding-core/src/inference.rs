@@ -1,19 +1,94 @@
-use crate::format::{EmbeddingFormat, FormatError, ParsedModel};
-use crate::kernels::{gelu_tanh, layer_norm, read_f16, ternary_linear};
+use crate::format::{EmbeddingFormat, FormatError, ModelHeader, ModelLayout, ParsedModel};
+use crate::kernels::{
+    LayerNormWeights, RuntimeTernaryMatrix, gelu_tanh, layer_norm, read_f16, ternary_linear,
+};
 
-pub struct Encoder<'a> {
-    model: ParsedModel<'a>,
+#[derive(Debug)]
+struct RuntimeWeights {
+    embedding_scales: Option<Vec<f32>>,
+    position_embedding: Vec<f32>,
+    embedding_norm: LayerNormWeights,
+    embedding_projection: RuntimeTernaryMatrix,
+    attention_norm: LayerNormWeights,
+    attention_qkv: RuntimeTernaryMatrix,
+    attention_output: RuntimeTernaryMatrix,
+    ffn_norm: LayerNormWeights,
+    ffn_up: RuntimeTernaryMatrix,
+    ffn_down: RuntimeTernaryMatrix,
+    final_norm: LayerNormWeights,
+    output_projection: Vec<f32>,
+    output_bias: Vec<f32>,
 }
 
-impl<'a> Encoder<'a> {
-    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, FormatError> {
+impl RuntimeWeights {
+    fn decode(bytes: &[u8], header: &ModelHeader, layout: &ModelLayout) -> Self {
+        let embedding_scales = layout.token_embedding_scales_offset.map(|offset| {
+            (0..header.vocab_size)
+                .map(|row| read_f16(bytes, offset + row * 2))
+                .collect()
+        });
+        let position_embedding = (0..header.max_sequence_length * header.embedding_dim)
+            .map(|index| read_f16(bytes, layout.position_embedding_offset + index * 2))
+            .collect();
+        let output_projection = (0..header.output_dim * header.hidden_dim)
+            .map(|index| read_f16(bytes, layout.output_projection_offset + index * 2))
+            .collect();
+        let bias_offset =
+            layout.output_projection_offset + header.output_dim * header.hidden_dim * 2;
+        let output_bias = (0..header.output_dim)
+            .map(|row| read_f16(bytes, bias_offset + row * 2))
+            .collect();
+        Self {
+            embedding_scales,
+            position_embedding,
+            embedding_norm: LayerNormWeights::decode(
+                bytes,
+                layout.embedding_norm_offset,
+                header.embedding_dim,
+            ),
+            embedding_projection: RuntimeTernaryMatrix::decode(bytes, &layout.embedding_projection),
+            attention_norm: LayerNormWeights::decode(
+                bytes,
+                layout.attention_norm_offset,
+                header.hidden_dim,
+            ),
+            attention_qkv: RuntimeTernaryMatrix::decode(bytes, &layout.attention_qkv),
+            attention_output: RuntimeTernaryMatrix::decode(bytes, &layout.attention_output),
+            ffn_norm: LayerNormWeights::decode(bytes, layout.ffn_norm_offset, header.hidden_dim),
+            ffn_up: RuntimeTernaryMatrix::decode(bytes, &layout.ffn_up),
+            ffn_down: RuntimeTernaryMatrix::decode(bytes, &layout.ffn_down),
+            final_norm: LayerNormWeights::decode(
+                bytes,
+                layout.final_norm_offset,
+                header.hidden_dim,
+            ),
+            output_projection,
+            output_bias,
+        }
+    }
+}
+
+pub struct Encoder {
+    bytes: Vec<u8>,
+    header: ModelHeader,
+    layout: ModelLayout,
+    weights: RuntimeWeights,
+}
+
+impl Encoder {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, FormatError> {
+        let model = ParsedModel::parse(bytes)?;
+        let weights = RuntimeWeights::decode(bytes, &model.header, &model.layout);
         Ok(Self {
-            model: ParsedModel::parse(bytes)?,
+            bytes: bytes.to_vec(),
+            header: model.header,
+            layout: model.layout,
+            weights,
         })
     }
 
     pub fn header(&self) -> &crate::ModelHeader {
-        &self.model.header
+        &self.header
     }
 
     pub fn encode_tokens(
@@ -22,7 +97,7 @@ impl<'a> Encoder<'a> {
         attention_mask: &[u8],
         output_dimension: usize,
     ) -> Result<Vec<f32>, FormatError> {
-        let header = &self.model.header;
+        let header = &self.header;
         if input_ids.is_empty()
             || input_ids.len() != attention_mask.len()
             || input_ids.len() > header.max_sequence_length
@@ -39,14 +114,16 @@ impl<'a> Encoder<'a> {
             return Err(FormatError::InvalidShape("attention mask"));
         }
         let sequence = input_ids.len();
-        let bytes = self.model.bytes;
-        let layout = &self.model.layout;
+        let bytes = &self.bytes;
+        let layout = &self.layout;
+        let weights = &self.weights;
         let mut embedding = vec![0.0; sequence * header.embedding_dim];
         for (position, token_id) in input_ids.iter().enumerate() {
             let token = *token_id as usize;
-            let scale = layout
-                .token_embedding_scales_offset
-                .map(|offset| read_f16(bytes, offset + token * 2))
+            let scale = weights
+                .embedding_scales
+                .as_ref()
+                .map(|scales| scales[token])
                 .unwrap_or(1.0);
             for column in 0..header.embedding_dim {
                 let token_value = match header.embedding_format {
@@ -77,33 +154,25 @@ impl<'a> Encoder<'a> {
                         read_f16(bytes, offset)
                     }
                 };
-                let position_offset = layout.position_embedding_offset
-                    + (position * header.embedding_dim + column) * 2;
-                embedding[position * header.embedding_dim + column] =
-                    token_value + read_f16(bytes, position_offset);
+                embedding[position * header.embedding_dim + column] = token_value
+                    + weights.position_embedding[position * header.embedding_dim + column];
             }
         }
         let embedding_normalized = layer_norm(
             &embedding,
             sequence,
             header.embedding_dim,
-            &bytes[layout.embedding_norm_offset..],
+            &weights.embedding_norm,
         );
         let mut hidden = ternary_linear(
-            bytes,
-            &layout.embedding_projection,
+            &weights.embedding_projection,
             &embedding_normalized,
             sequence,
         );
         for _ in 0..header.num_repeats {
             hidden = self.shared_block(hidden, attention_mask);
         }
-        hidden = layer_norm(
-            &hidden,
-            sequence,
-            header.hidden_dim,
-            &bytes[layout.final_norm_offset..],
-        );
+        hidden = layer_norm(&hidden, sequence, header.hidden_dim, &weights.final_norm);
         let real_tokens = attention_mask.iter().filter(|value| **value != 0).count() as f32;
         let mut pooled = vec![0.0; header.hidden_dim];
         for row in 0..sequence {
@@ -114,14 +183,11 @@ impl<'a> Encoder<'a> {
                 pooled[column] += hidden[row * header.hidden_dim + column] / real_tokens;
             }
         }
-        let projection = layout.output_projection_offset;
-        let bias = projection + header.output_dim * header.hidden_dim * 2;
         let mut output = vec![0.0; output_dimension];
         for (row, output_value) in output.iter_mut().enumerate() {
-            let mut value = read_f16(bytes, bias + row * 2);
+            let mut value = weights.output_bias[row];
             for (column, pooled_value) in pooled.iter().enumerate() {
-                value += pooled_value
-                    * read_f16(bytes, projection + (row * header.hidden_dim + column) * 2);
+                value += pooled_value * weights.output_projection[row * header.hidden_dim + column];
             }
             *output_value = value;
         }
@@ -136,36 +202,29 @@ impl<'a> Encoder<'a> {
     }
 
     fn shared_block(&self, hidden: Vec<f32>, attention_mask: &[u8]) -> Vec<f32> {
-        let header = &self.model.header;
-        let layout = &self.model.layout;
-        let bytes = self.model.bytes;
+        let header = &self.header;
+        let weights = &self.weights;
         let sequence = attention_mask.len();
         let normalized = layer_norm(
             &hidden,
             sequence,
             header.hidden_dim,
-            &bytes[layout.attention_norm_offset..],
+            &weights.attention_norm,
         );
-        let qkv = ternary_linear(bytes, &layout.attention_qkv, &normalized, sequence);
+        let qkv = ternary_linear(&weights.attention_qkv, &normalized, sequence);
         let attention = self.attention(&qkv, attention_mask);
-        let attention_output =
-            ternary_linear(bytes, &layout.attention_output, &attention, sequence);
+        let attention_output = ternary_linear(&weights.attention_output, &attention, sequence);
         let residual = hidden
             .iter()
             .zip(attention_output)
             .map(|(left, right)| left + right)
             .collect::<Vec<_>>();
-        let ffn_input = layer_norm(
-            &residual,
-            sequence,
-            header.hidden_dim,
-            &bytes[layout.ffn_norm_offset..],
-        );
-        let mut expanded = ternary_linear(bytes, &layout.ffn_up, &ffn_input, sequence);
+        let ffn_input = layer_norm(&residual, sequence, header.hidden_dim, &weights.ffn_norm);
+        let mut expanded = ternary_linear(&weights.ffn_up, &ffn_input, sequence);
         expanded
             .iter_mut()
             .for_each(|value| *value = gelu_tanh(*value));
-        let contracted = ternary_linear(bytes, &layout.ffn_down, &expanded, sequence);
+        let contracted = ternary_linear(&weights.ffn_down, &expanded, sequence);
         residual
             .into_iter()
             .zip(contracted)
@@ -174,7 +233,7 @@ impl<'a> Encoder<'a> {
     }
 
     fn attention(&self, qkv: &[f32], attention_mask: &[u8]) -> Vec<f32> {
-        let header = &self.model.header;
+        let header = &self.header;
         let sequence = attention_mask.len();
         let head_dim = header.hidden_dim / header.num_heads;
         let mut output = vec![0.0; sequence * header.hidden_dim];
